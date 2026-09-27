@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kinetics-400 (val) Label Explorer</title>
+<style>
+  :root {
+    --bg: #0f1220;
+    --panel: #171b2e;
+    --panel-2: #1f2440;
+    --border: #2b3157;
+    --text: #e7e9f5;
+    --text-dim: #9aa0c3;
+    --accent: #7c9cff;
+    --accent-2: #6ee7b7;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: linear-gradient(180deg, var(--bg), #0b0d18);
+    color: var(--text);
+    min-height: 100vh;
+  }
+  header {
+    padding: 28px 24px 16px;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+  h1 {
+    margin: 0 0 4px;
+    font-size: 1.6rem;
+  }
+  .subtitle {
+    color: var(--text-dim);
+    font-size: 0.92rem;
+    margin: 0 0 20px;
+    line-height: 1.5;
+  }
+  .controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1 1 160px;
+  }
+  .field label {
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  input, select {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 9px 10px;
+    border-radius: 8px;
+    font-size: 0.92rem;
+    outline: none;
+  }
+  input:focus, select:focus { border-color: var(--accent); }
+  .stat {
+    color: var(--text-dim);
+    font-size: 0.85rem;
+    margin: 0 auto 12px;
+    max-width: 1100px;
+    padding: 0 24px;
+  }
+  .stat b { color: var(--accent-2); }
+  main {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 24px 40px;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  thead th {
+    text-align: left;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-dim);
+    padding: 12px 14px;
+    background: var(--panel-2);
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+  }
+  tbody td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.9rem;
+    vertical-align: top;
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover { background: rgba(124, 156, 255, 0.06); }
+  .label-pill {
+    display: inline-block;
+    background: rgba(124, 156, 255, 0.15);
+    color: var(--accent);
+    border-radius: 999px;
+    padding: 3px 10px;
+    font-size: 0.82rem;
+  }
+  a.yt-link {
+    color: var(--accent-2);
+    text-decoration: none;
+  }
+  a.yt-link:hover { text-decoration: underline; }
+  .empty {
+    text-align: center;
+    color: var(--text-dim);
+    padding: 40px 0;
+  }
+  .table-wrap {
+    max-height: 65vh;
+    overflow: auto;
+    border-radius: 12px;
+  }
+  footer {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 24px 40px;
+    color: var(--text-dim);
+    font-size: 0.8rem;
+  }
+  code { color: var(--accent-2); }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Kinetics-400 (val) Label Explorer</h1>
+  <p class="subtitle">
+    Browses a real subset of the official Kinetics-400 action-recognition validation
+    labels &mdash; each row is one labeled video clip (YouTube source, action label,
+    and the timestamp range the clip was cut from). Search by label keyword,
+    filter by exact category, or filter by clip duration.
+  </p>
+
+  <div class="controls">
+    <div class="field">
+      <label for="search">Search label</label>
+      <input id="search" type="text" placeholder="e.g. cream, arm, bird...">
+    </div>
+    <div class="field">
+      <label for="category">Category</label>
+      <select id="category"><option value="">All categories</option></select>
+    </div>
+    <div class="field">
+      <label for="minDur">Min duration (s)</label>
+      <input id="minDur" type="number" min="0" placeholder="e.g. 8">
+    </div>
+    <div class="field">
+      <label for="maxDur">Max duration (s)</label>
+      <input id="maxDur" type="number" min="0" placeholder="e.g. 15">
+    </div>
+  </div>
+</header>
+
+<p class="stat" id="stat">Loading dataset&hellip;</p>
+
+<main>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Label</th>
+          <th>YouTube ID</th>
+          <th>Start (s)</th>
+          <th>End (s)</th>
+          <th>Duration (s)</th>
+          <th>Split</th>
+          <th>Link</th>
+        </tr>
+      </thead>
+      <tbody id="rows"></tbody>
+    </table>
+  </div>
+  <div class="empty" id="emptyMsg" style="display:none;">No clips match your filters.</div>
+</main>
+
+<footer>
+  Data source: official Kinetics-400 validation annotations (<code>label, youtube_id,
+  time_start, time_end, split, is_cc</code>). Duration is computed as
+  <code>time_end &minus; time_start</code>. This page reads <code>data.json</code>,
+  built from <code>data/kinetics400_val_sample.csv</code> by
+  <code>src/build_web_data.py</code>. No external libraries or network calls are used.
+</footer>
+
+<script>
+(function () {
+  let allClips = [];
+
+  const els = {
+    search: document.getElementById('search'),
+    category: document.getElementById('category'),
+    minDur: document.getElementById('minDur'),
+    maxDur: document.getElementById('maxDur'),
+    rows: document.getElementById('rows'),
+    stat: document.getElementById('stat'),
+    empty: document.getElementById('emptyMsg'),
+  };
+
+  function populateCategories(clips) {
+    const labels = Array.from(new Set(clips.map(c => c.label))).sort();
+    for (const label of labels) {
+      const opt = document.createElement('option');
+      opt.value = label;
+      opt.textContent = label;
+      els.category.appendChild(opt);
+    }
+  }
+
+  function escapeHtml(str) {
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+  }
+
+  function render() {
+    const kw = els.search.value.trim().toLowerCase();
+    const cat = els.category.value;
+    const minD = els.minDur.value === '' ? null : Number(els.minDur.value);
+    const maxD = els.maxDur.value === '' ? null : Number(els.maxDur.value);
+
+    const filtered = allClips.filter(c => {
+      if (kw && !c.label.toLowerCase().includes(kw)) return false;
+      if (cat && c.label !== cat) return false;
+      if (minD !== null && (c.duration_seconds === null || c.duration_seconds < minD)) return false;
+      if (maxD !== null && (c.duration_seconds === null || c.duration_seconds > maxD)) return false;
+      return true;
+    });
+
+    els.stat.innerHTML = `<b>${filtered.length}</b> of ${allClips.length} clips match your filters.`;
+
+    if (filtered.length === 0) {
+      els.rows.innerHTML = '';
+      els.empty.style.display = 'block';
+      return;
+    }
+    els.empty.style.display = 'none';
+
+    const html = filtered.map(c => `
+      <tr>
+        <td><span class="label-pill">${escapeHtml(c.label)}</span></td>
+        <td>${escapeHtml(c.youtube_id)}</td>
+        <td>${c.time_start ?? ''}</td>
+        <td>${c.time_end ?? ''}</td>
+        <td>${c.duration_seconds ?? ''}</td>
+        <td>${escapeHtml(c.split)}</td>
+        <td><a class="yt-link" href="${c.youtube_url}" target="_blank" rel="noopener">watch &rarr;</a></td>
+      </tr>
+    `).join('');
+    els.rows.innerHTML = html;
+  }
+
+  [els.search, els.category, els.minDur, els.maxDur].forEach(el =>
+    el.addEventListener('input', render)
+  );
+
+  fetch('data.json')
+    .then(r => {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    })
+    .then(clips => {
+      allClips = clips;
+      populateCategories(clips);
+      render();
+    })
+    .catch(err => {
+      els.stat.textContent = 'Could not load data.json — run "src/build_web_data.py" first (see README).';
+      console.error(err);
+    });
+})();
+</script>
+
+</body>
+</html>
